@@ -62,12 +62,17 @@ class Jenkins < Formula
     ENV.prepend "_JAVA_OPTIONS", "-Djava.io.tmpdir=#{testpath}"
 
     port = free_port
-    fork do
+    pid = fork do
       exec "#{bin}/jenkins --httpPort=#{port}"
     end
     sleep 60
 
-    output = shell_output("curl localhost:#{port}/")
-    assert_match /Welcome to Jenkins!|Unlock Jenkins|Authentication required/, output
+    begin
+      output = shell_output("curl localhost:#{port}/")
+      assert_match(/Welcome to Jenkins!|Unlock Jenkins|Authentication required/, output)
+    ensure
+      Process.kill("SIGINT", pid)
+      Process.wait(pid)
+    end
   end
 end
